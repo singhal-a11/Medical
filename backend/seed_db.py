@@ -7,9 +7,20 @@ from app.models.test import Test
 from app.core.security import hash_password
 
 async def seed():
-    # Make sure tables are created
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Make sure tables are created (with retries for database readiness)
+    for attempt in range(1, 11):
+        try:
+            print(f"Connecting to database (attempt {attempt}/10)...")
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            print("Connected and initialized database tables successfully!")
+            break
+        except Exception as e:
+            if attempt == 10:
+                print("Could not connect to database after 10 attempts. Exiting.")
+                raise e
+            print(f"Database not ready yet ({e}). Waiting 3 seconds...")
+            await asyncio.sleep(3)
 
     async with AsyncSessionLocal() as db:
         # Check if users already exist

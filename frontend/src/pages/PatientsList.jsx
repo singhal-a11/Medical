@@ -39,7 +39,14 @@ export default function PatientsList() {
   async function handleAddPatient(e) {
     e.preventDefault()
     try {
-      await api.post('/api/patients', form)
+      // Map empty strings to null or omit them to prevent backend validation errors
+      const payload = { ...form }
+      Object.keys(payload).forEach(key => {
+        if (payload[key] === '') {
+          payload[key] = null
+        }
+      })
+      await api.post('/api/patients', payload)
       setMessage('Patient added successfully!')
       setForm({ full_name: '', date_of_birth: '', gender: '', phone: '', email: '', address: '' })
       loadPatients()
@@ -61,6 +68,9 @@ export default function PatientsList() {
         <h2>Patients</h2>
         <div className="nav-links">
           <span>Dr. {user?.full_name}</span>
+          <button onClick={() => navigate('/doctor/reports')} className="btn-secondary">
+            View Reports
+          </button>
           <button onClick={() => navigate('/doctor/request')} className="btn-secondary">
             Create Request
           </button>

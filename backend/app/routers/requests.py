@@ -7,9 +7,12 @@ from datetime import datetime
 
 from app.database import get_db
 from app.models.test_request import TestRequest
+from app.models.patient import Patient
 from app.schemas.test_request import TestRequestCreate, TestRequestUpdate, TestRequestOut
 from app.core.dependencies import get_current_user, require_role
 from app.models.user import User
+from app.models.report import Report
+from app.services.pdf_service import generate_report
 
 router = APIRouter()
 
@@ -30,6 +33,13 @@ async def get_requests(
         query = query.where(TestRequest.doctor_id == current_user.id)
     elif current_user.role == "technician":
         query = query.where(TestRequest.status.in_(["pending", "in_progress"]))
+    elif current_user.role == "patient":
+        # Get requests for this patient email
+        patient_res = await db.execute(select(Patient).where(Patient.email == current_user.email))
+        patient = patient_res.scalar_one_or_none()
+        if not patient:
+            return []
+        query = query.where(TestRequest.patient_id == patient.id)
     result = await db.execute(query)
     return result.scalars().all()
 
@@ -100,6 +110,28 @@ async def update_request(
         req.technician_id = current_user.id
     if payload.status == "completed":
         req.completed_at = datetime.utcnow()
+        # Eagerly load request relationships to generate PDF report
+        req_res = await db.execute(
+            select(TestRequest)
+            .options(
+                selectinload(TestRequest.patient),
+                selectinload(TestRequest.test),
+                selectinload(TestRequest.doctor),
+            )
+            .where(TestRequest.id == request_id)
+        )
+        full_req = req_res.scalar_one()
+        file_path = generate_report(full_req)
+
+        # Check if report already exists
+        existing_rep = await db.execute(select(Report).where(Report.test_request_id == request_id))
+        if not existing_rep.scalar_one_or_none():
+            report = Report(
+                test_request_id=request_id,
+                file_path=file_path,
+                generated_by=current_user.id,
+            )
+            db.add(report)
 
     await db.commit()
 

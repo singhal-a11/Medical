@@ -49,8 +49,7 @@ export default function PendingRequests() {
     try {
       await api.patch(`/api/requests/${id}`, {
         status: 'completed',
-        result: result,
-        completed_at: new Date().toISOString(),
+        result_value: result,
       })
       setMessage('Request completed successfully!')
       loadRequests()
@@ -104,7 +103,7 @@ export default function PendingRequests() {
                       {req.status}
                     </span>
                   </td>
-                  <td>{req.result || '—'}</td>
+                  <td>{req.result_value || '—'}</td>
                   <td>
                     {/* Show Start button only if pending */}
                     {req.status === 'pending' && (

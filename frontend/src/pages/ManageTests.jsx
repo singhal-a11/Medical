@@ -39,10 +39,13 @@ export default function ManageTests() {
   async function handleAddTest(e) {
     e.preventDefault()
     try {
-      await api.post('/api/tests', {
-        ...form,
-        price: parseFloat(form.price),
+      const payload = { ...form, price: parseFloat(form.price) }
+      Object.keys(payload).forEach(key => {
+        if (payload[key] === '') {
+          payload[key] = null
+        }
       })
+      await api.post('/api/tests', payload)
       setMessage('Test added successfully!')
       setForm({ name: '', category: '', normal_range: '', unit: '', price: '' })
       loadTests() // refresh the list

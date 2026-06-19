@@ -9,6 +9,7 @@ import os
 from app.database import get_db
 from app.models.report import Report
 from app.models.test_request import TestRequest
+from app.models.patient import Patient
 from app.schemas.report import ReportOut
 from app.core.dependencies import get_current_user, require_role
 from app.models.user import User
@@ -51,8 +52,17 @@ async def create_report(
     )
     db.add(report)
     await db.commit()
-    await db.refresh(report)
-    return report
+
+    report_res = await db.execute(
+        select(Report)
+        .options(
+            selectinload(Report.test_request).selectinload(TestRequest.patient),
+            selectinload(Report.test_request).selectinload(TestRequest.test),
+            selectinload(Report.test_request).selectinload(TestRequest.doctor),
+        )
+        .where(Report.test_request_id == request_id)
+    )
+    return ReportOut.model_validate(report_res.scalar_one())
 
 
 @router.get("/", response_model=List[ReportOut])
@@ -60,8 +70,28 @@ async def list_reports(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(Report))
-    return result.scalars().all()
+    query = select(Report).options(
+        selectinload(Report.test_request).selectinload(TestRequest.patient),
+        selectinload(Report.test_request).selectinload(TestRequest.test),
+        selectinload(Report.test_request).selectinload(TestRequest.doctor),
+    )
+    
+    if current_user.role == "doctor":
+        query = query.join(TestRequest, Report.test_request_id == TestRequest.id).where(
+            TestRequest.doctor_id == current_user.id
+        )
+    elif current_user.role == "patient":
+        # Find patient record
+        patient_res = await db.execute(select(Patient).where(Patient.email == current_user.email))
+        patient = patient_res.scalar_one_or_none()
+        if not patient:
+            return []
+        query = query.join(TestRequest, Report.test_request_id == TestRequest.id).where(
+            TestRequest.patient_id == patient.id
+        )
+    
+    result = await db.execute(query)
+    return [ReportOut.model_validate(r) for r in result.scalars().all()]
 
 
 @router.get("/{report_id}/download")

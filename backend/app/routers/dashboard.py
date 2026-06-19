@@ -7,6 +7,7 @@ from app.models.patient import Patient
 from app.models.test_request import TestRequest
 from app.models.user import User
 from app.models.report import Report
+from app.models.test import Test
 from app.core.dependencies import get_current_user
 
 router = APIRouter()
@@ -34,15 +35,24 @@ async def get_dashboard(
     # Total reports generated
     total_reports = (await db.execute(select(func.count(Report.id)))).scalar()
 
+    # Tests by category
+    categories_res = await db.execute(
+        select(Test.category, func.count(Test.id))
+        .where(Test.is_active == True)  # noqa: E712
+        .group_by(Test.category)
+    )
+    tests_by_category = {row[0]: row[1] for row in categories_res.all()}
+
     data = {
         "total_patients": total_patients,
         "total_reports": total_reports,
-        "requests": {
+        "requests_by_status": {
             "pending": pending,
             "in_progress": in_progress,
             "completed": completed,
             "total": pending + in_progress + completed,
         },
+        "tests_by_category": tests_by_category,
     }
 
     # Admin-only: user counts by role

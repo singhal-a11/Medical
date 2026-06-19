@@ -89,6 +89,7 @@ export default function RegisterPage() {
             <select value={role} onChange={(e) => setRole(e.target.value)}>
               <option value="doctor">Doctor</option>
               <option value="technician">Technician</option>
+              <option value="patient">Patient</option>
             </select>
           </div>
 

@@ -38,6 +38,9 @@ export default function AdminDashboard() {
         <h2>Admin Dashboard</h2>
         <div className="nav-links">
           <span>Welcome, {user?.full_name}</span>
+          <button onClick={() => navigate('/admin/users')} className="btn-secondary">
+            Manage Users
+          </button>
           <button onClick={() => navigate('/admin/tests')} className="btn-secondary">
             Manage Tests
           </button>

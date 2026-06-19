@@ -33,6 +33,7 @@ export default function LoginPage() {
       if (data.user.role === 'admin') navigate('/admin')
       else if (data.user.role === 'doctor') navigate('/doctor/patients')
       else if (data.user.role === 'technician') navigate('/tech/requests')
+      else if (data.user.role === 'patient') navigate('/patient')
     } catch (err) {
       setError('Invalid email or password. Please try again.')
     } finally {

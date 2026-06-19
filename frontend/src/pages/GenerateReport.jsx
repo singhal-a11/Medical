@@ -83,7 +83,7 @@ export default function GenerateReport() {
                 </tr>
                 <tr>
                   <td><strong>Result</strong></td>
-                  <td>{requestData.result}</td>
+                  <td>{requestData.result_value}</td>
                 </tr>
                 <tr>
                   <td><strong>Normal Range</strong></td>

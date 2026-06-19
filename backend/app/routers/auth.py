@@ -4,6 +4,7 @@ from sqlalchemy import select
 
 from app.database import get_db
 from app.models.user import User
+from app.models.patient import Patient
 from app.schemas.user import UserCreate, UserOut, Token, LoginRequest
 from app.core.security import hash_password, verify_password, create_access_token
 
@@ -26,6 +27,18 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)):
         role=payload.role,
     )
     db.add(user)
+    
+    if payload.role == "patient":
+        # Check if patient already exists by email
+        pat_result = await db.execute(select(Patient).where(Patient.email == payload.email))
+        existing_pat = pat_result.scalar_one_or_none()
+        if not existing_pat:
+            patient = Patient(
+                full_name=payload.full_name,
+                email=payload.email,
+            )
+            db.add(patient)
+            
     await db.commit()
     await db.refresh(user)
     return user

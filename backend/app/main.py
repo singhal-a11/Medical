@@ -35,6 +35,7 @@ app.add_middleware(
         "http://127.0.0.1:5174",      # Alternative localhost
         "http://127.0.0.1:5173",
     ],
+    allow_origin_regex=r"https://.*\.onrender\.com",  # Allow all Render subdomains
     allow_credentials=True,           # Allow cookies/auth headers
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],  # Explicit methods
     allow_headers=[                   # Explicit headers needed for auth
